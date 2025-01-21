@@ -74,7 +74,7 @@ jobs:
                     echo "::set-output name=pr_url::$pr_url"
                   fi
 
-            - name: Create or Update Pull Request
+            - name: Create Pull Request
               if: steps.check_pr.outputs.pr_exists == 'false'
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -104,7 +104,8 @@ jobs:
                   # Update the existing PR
                   gh pr edit ${{ steps.check_pr.outputs.pr_url }} \
                     --title "${{ github.event.inputs.pr-title }}" \
-                    --body "${{ github.event.inputs.pr-body }}"
+                    --body "${{ github.event.inputs.pr-body }}" \
+                    --label "automatic"
 
                   # Assign reviewers if any
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
