@@ -100,6 +100,7 @@ jobs:
                     --base "${{ github.event.inputs.target-branch }}" \
                     --head "${{ github.event.inputs.source-branch }}" \
                     --repo ${{ github.repository }} \
+                    --add-assignee "${{ github.actor }}" \
                     --add-label "github-actions")
 
                   # Assign reviewers if any
@@ -119,6 +120,7 @@ jobs:
                   gh pr edit ${{ steps.check_pr.outputs.pr_url }} \
                     --title "${{ github.event.inputs.pr-title }}" \
                     --body "${{ github.event.inputs.pr-body }}" \
+                    --add-assignee "${{ github.actor }}" \
                     --add-label "github-actions"
 
                   # Assign reviewers if any
