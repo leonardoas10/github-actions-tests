@@ -86,7 +86,7 @@ jobs:
                     --base "${{ github.event.inputs.target-branch }}" \
                     --head "${{ github.event.inputs.source-branch }}" \
                     --repo ${{ github.repository }} \
-                    --label "automatic")
+                    --add-label "automatic")
 
                   # Assign reviewers if any
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
@@ -105,7 +105,7 @@ jobs:
                   gh pr edit ${{ steps.check_pr.outputs.pr_url }} \
                     --title "${{ github.event.inputs.pr-title }}" \
                     --body "${{ github.event.inputs.pr-body }}" \
-                    --label "automatic"
+                    --add-label "automatic"
 
                   # Assign reviewers if any
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
