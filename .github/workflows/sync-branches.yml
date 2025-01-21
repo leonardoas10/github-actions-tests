@@ -74,6 +74,20 @@ jobs:
                     echo "::set-output name=pr_url::$pr_url"
                   fi
 
+            - name: Ensure 'github-actions' Label Exists
+              id: check_label
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  label_exists=$(gh label list --repo ${{ github.repository }} --json name -q ".[].name" | grep -w "github-actions" || true)
+                  if [[ -n "$label_exists" ]]; then
+                    echo "Label 'github-actions' already exists. Skipping PR creation/update."
+                    exit 0
+                  else
+                    echo "Label 'github-actions' does not exist. Creating it now."
+                    gh label create github-actions --color "D4C5F9" --description "Label for GitHub Actions"
+                  fi
+
             - name: Create Pull Request
               if: steps.check_pr.outputs.pr_exists == 'false'
               env:
@@ -86,7 +100,7 @@ jobs:
                     --base "${{ github.event.inputs.target-branch }}" \
                     --head "${{ github.event.inputs.source-branch }}" \
                     --repo ${{ github.repository }} \
-                    --add-label "automatic")
+                    --add-label "github-actions")
 
                   # Assign reviewers if any
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
@@ -105,7 +119,7 @@ jobs:
                   gh pr edit ${{ steps.check_pr.outputs.pr_url }} \
                     --title "${{ github.event.inputs.pr-title }}" \
                     --body "${{ github.event.inputs.pr-body }}" \
-                    --add-label "automatic"
+                    --add-label "github-actions"
 
                   # Assign reviewers if any
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
