@@ -3,10 +3,6 @@ name: Sync Branches
 on:
     workflow_dispatch:
         inputs:
-            source-branch:
-                description: 'Source branch to sync from'
-                required: true
-                default: 'main'
             target-branch:
                 description: 'Target branch to sync to'
                 required: true
@@ -33,7 +29,7 @@ jobs:
         steps:
             - name: Validate Source Branch
               run: |
-                  if [[ "${{ github.event.inputs.source-branch }}" != "main" ]]; then
+                  if [[ "${{ github.ref_name }}" != "main" ]]; then
                     echo "This workflow can only be triggered with 'main' as the source branch."
                     exit 1
                   fi
@@ -44,9 +40,6 @@ jobs:
                   fi
                   if [[ -z "${{ github.event.inputs.target-branch }}" ]]; then
                       echo "Error: Target branch is required." && exit 1
-                  fi
-                  if [[ -z "${{ github.event.inputs.source-branch }}" ]]; then
-                      echo "Error: Source branch is required." && exit 1
                   fi
 
     create-or-update-pr:
@@ -98,7 +91,7 @@ jobs:
                     --title "${{ github.event.inputs.pr-title }}" \
                     --body "${{ github.event.inputs.pr-body }}" \
                     --base "${{ github.event.inputs.target-branch }}" \
-                    --head "${{ github.event.inputs.source-branch }}" \
+                    --head "${{ github.ref_name }}" \
                     --repo ${{ github.repository }} \
                     --add-assignee "${{ github.actor }}" \
                     --add-label "github-actions")
