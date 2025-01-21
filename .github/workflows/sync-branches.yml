@@ -14,7 +14,7 @@ on:
             pr-title:
                 description: 'Custom PR title'
                 required: false
-                default: 'chore: sync branches'
+                default: 'Merge main into dev'
             pr-body:
                 description: 'Custom PR description'
                 required: false
@@ -44,25 +44,17 @@ jobs:
               with:
                   fetch-depth: 0
             - name: Create Pull Request
-              uses: peter-evans/create-pull-request@v7
-              with:
-                  commit-message: merge
-                  title: Update AUTHORS
-                  body: Credit new contributors by updating AUTHORS
-                  branch: main
-                  base: dev
-            # - name: Create Pull Request
-            #   env:
-            #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            #   run: |
-            #       API_URL="https://api.github.com/repos/${{ github.repository }}/pulls"
-            #       DATA=$(jq -n \
-            #           --arg title "${{ github.event.inputs.pr-title }}" \
-            #           --arg base "${{ github.event.inputs.target-branch }}" \
-            #           --arg head "${{ github.event.inputs.source-branch }}" \
-            #           --arg body "${{ github.event.inputs.pr-body }}" \
-            #           '{title: $title, head: $head, base: $base, body: $body}')
-            #       echo "Creating PR with data: $DATA"
-            #       curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
-            #           -H "Accept: application/vnd.github+json" \
-            #           -d "$DATA" "$API_URL"
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  API_URL="https://api.github.com/repos/${{ github.repository }}/pulls"
+                  DATA=$(jq -n \
+                      --arg title "${{ github.event.inputs.pr-title }}" \
+                      --arg base "${{ github.event.inputs.target-branch }}" \
+                      --arg head "${{ github.event.inputs.source-branch }}" \
+                      --arg body "${{ github.event.inputs.pr-body }}" \
+                      '{title: $title, head: $head, base: $base, body: $body}')
+                  echo "Creating PR with data: $DATA"
+                  curl -X POST -H "Authorization: Bearer $GITHUB_TOKEN" \
+                      -H "Accept: application/vnd.github+json" \
+                      -d "$DATA" "$API_URL"
