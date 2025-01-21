@@ -1,0 +1,16 @@
+name: Main Workflow
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    setup:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+            - name: Initialize Project
+              uses: ./.github/actions/init
+              with:
+                  environment: 'testing'
+                  setup-level: 'full'

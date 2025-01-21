@@ -1,0 +1,43 @@
+name: 'Initialize Project'
+description: 'A basic initialization action for project setup'
+
+inputs:
+    environment:
+        description: 'The environment to initialize'
+        required: true
+        default: 'development'
+
+    setup-level:
+        description: 'Level of setup to perform'
+        required: false
+        default: 'basic'
+
+outputs:
+    initialization-status:
+        description: 'Status of the initialization process'
+        value: ${{ steps.verify.outputs.status }}
+
+runs:
+    using: 'composite'
+    steps:
+        - name: Check environment
+          shell: bash
+          run: echo "Initializing ${{ inputs.environment }} environment"
+
+        - name: Setup project
+          shell: bash
+          run: |
+              echo "Starting project setup..."
+              echo "Setup level: ${{ inputs.setup-level }}"
+              # Add your initialization logic here
+
+        - name: Verify setup
+          shell: bash
+          id: verify
+          run: |
+              echo "Verifying setup..."
+              echo "initialization-status=success" >> $GITHUB_OUTPUT
+
+branding:
+    icon: 'box'
+    color: 'blue'
