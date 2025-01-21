@@ -49,7 +49,8 @@ jobs:
                   commit-message: merge
                   title: Update AUTHORS
                   body: Credit new contributors by updating AUTHORS
-                  branch: dev
+                  branch: main
+                  base: dev
             # - name: Create Pull Request
             #   env:
             #       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
