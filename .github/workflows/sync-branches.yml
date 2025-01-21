@@ -1,0 +1,48 @@
+name: Sync Branches
+on:
+    workflow_dispatch:
+        inputs:
+            source-branch:
+                description: 'Source branch to sync from'
+                required: true
+                default: 'main'
+                type: string
+            target-branch:
+                description: 'Target branch to sync to'
+                required: true
+                default: 'dev'
+                type: string
+            pr-title:
+                description: 'Custom PR title'
+                required: false
+                type: string
+                default: 'chore: sync branches'
+            pr-body:
+                description: 'Custom PR description'
+                required: false
+                type: string
+                default: 'Automated PR to synchronize changes between branches'
+
+permissions:
+    pull-requests: write
+    contents: write
+
+jobs:
+    create-sync-pr:
+        runs-on: ubuntu-latest
+        if: github.ref == 'refs/heads/main'
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+                  ref: ${{ inputs.target-branch }}
+
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v5
+              with:
+                  base: ${{ inputs.target-branch }}
+                  branch: sync/${{ inputs.source-branch }}-to-${{ inputs.target-branch }}
+                  title: ${{ inputs.pr-title }}
+                  body: ${{ inputs.pr-body }}
+                  commit-message: 'Sync changes from ${{ inputs.source-branch }} to ${{ inputs.target-branch }}'
+                  delete-branch: true
