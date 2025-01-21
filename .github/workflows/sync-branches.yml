@@ -93,7 +93,7 @@ jobs:
                     --base "${{ github.event.inputs.target-branch }}" \
                     --head "${{ github.ref_name }}" \
                     --repo ${{ github.repository }} \
-                    --add-assignee "${{ github.actor }}" \
+                    --assignee "${{ github.actor }}" \
                     --add-label "github-actions")
 
                   # Assign reviewers if any
