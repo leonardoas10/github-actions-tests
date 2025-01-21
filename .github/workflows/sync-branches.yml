@@ -94,7 +94,7 @@ jobs:
                     --head "${{ github.ref_name }}" \
                     --repo ${{ github.repository }} \
                     --assignee "${{ github.actor }}" \
-                    --add-label "github-actions")
+                    --label "github-actions")
 
                   # Assign reviewers if any
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
