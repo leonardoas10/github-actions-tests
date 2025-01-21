@@ -60,6 +60,8 @@ jobs:
 
             - name: Check for Existing Pull Request
               id: check_pr
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
                   pr_url=$(gh pr list --base "${{ github.event.inputs.target-branch }}" --head "${{ github.event.inputs.source-branch }}" --state open --json url -q ".[0].url")
                   echo "PR URL: $pr_url"
