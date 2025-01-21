@@ -1,4 +1,5 @@
 name: Sync Branches
+
 on:
     workflow_dispatch:
         inputs:
@@ -6,21 +7,17 @@ on:
                 description: 'Source branch to sync from'
                 required: true
                 default: 'main'
-                type: string
             target-branch:
                 description: 'Target branch to sync to'
                 required: true
                 default: 'dev'
-                type: string
             pr-title:
                 description: 'Custom PR title'
                 required: false
-                type: string
                 default: 'chore: sync branches'
             pr-body:
                 description: 'Custom PR description'
                 required: false
-                type: string
                 default: 'Automated PR to synchronize changes between branches'
 
 permissions:
@@ -31,27 +28,27 @@ jobs:
     validate-trigger:
         runs-on: ubuntu-latest
         steps:
-            - name: Check Trigger Event
-              id: validate_event
+            - name: Validate Source Branch
               run: |
                   if [[ "${{ github.event.inputs.source-branch }}" != "main" ]]; then
-                      echo "This workflow can only be triggered with source-branch as 'main'."
-                      exit 1
+                    echo "This workflow can only be triggered with 'main' as the source branch."
+                    exit 1
                   fi
-                  echo "Validation successful."
-    create-sync-pr:
+
+    create-pr:
+        needs: validate-trigger
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v3
               with:
                   fetch-depth: 0
-            # Create or update Pull Request
-            - name: Create or Update Pull Request
+
+            - name: Create Pull Request
               uses: peter-evans/create-pull-request@v5
               with:
                   token: ${{ secrets.GITHUB_TOKEN }}
-                  base: ${{ inputs.target-branch }}
-                  branch: ${{ inputs.source-branch }}
+                  base: ${{ inputs.target-branch }} # Set the base branch for the PR
+                  branch: ${{ inputs.source-branch }} # Set the head branch for the PR
                   title: ${{ inputs.pr-title }}
                   body: ${{ inputs.pr-body }}
                   commit-message: 'Merge changes from ${{ inputs.source-branch }} to ${{ inputs.target-branch }}'
