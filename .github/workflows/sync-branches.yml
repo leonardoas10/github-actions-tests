@@ -45,53 +45,14 @@ jobs:
             - uses: actions/checkout@v3
               with:
                   fetch-depth: 0
-            # Debug Info
-            - name: Debug Info
-              run: |
-                  echo "Current branch: $(git branch --show-current)"
-                  echo "Remote branches:"
-                  git branch -r
-                  echo "Local branches:"
-                  git branch -l
-            # Fetch source branch
-            - name: Fetch source branch
-              run: |
-                  git fetch origin ${{ inputs.source-branch }}
-                  git checkout ${{ inputs.source-branch }}
-                  git pull origin ${{ inputs.source-branch }}
-            # Check if sync branch exists
-            - name: Check if sync branch exists
-              id: check_branch
-              run: |
-                  if git ls-remote --heads origin "sync/${{ inputs.source-branch }}-to-${{ inputs.target-branch }}" | grep -q "refs/heads"; then
-                      echo "exists=true" >> $GITHUB_ENV
-                  else
-                      echo "exists=false" >> $GITHUB_ENV
-                  fi
-            # Checkout or create sync branch
-            - name: Checkout or Create Sync Branch
-              run: |
-                  if [[ "$exists" == "true" ]]; then
-                      git checkout sync/${{ inputs.source-branch }}-to-${{ inputs.target-branch }}
-                      git pull origin sync/${{ inputs.source-branch }}-to-${{ inputs.target-branch }}
-                  else
-                      git checkout -b sync/${{ inputs.source-branch }}-to-${{ inputs.target-branch }}
-                  fi
-            # Merge source branch into sync branch
-            - name: Merge Source into Sync Branch
-              run: |
-                  git merge --no-ff origin/${{ inputs.source-branch }} || echo "Merge conflicts detected!"
-            # Push changes to remote
-            - name: Push Changes to Sync Branch
-              run: |
-                  git push origin sync/${{ inputs.source-branch }}-to-${{ inputs.target-branch }}
             # Create or update Pull Request
             - name: Create or Update Pull Request
               uses: peter-evans/create-pull-request@v5
               with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
                   base: ${{ inputs.target-branch }}
-                  branch: sync/${{ inputs.source-branch }}-to-${{ inputs.target-branch }}
+                  branch: ${{ inputs.source-branch }}
                   title: ${{ inputs.pr-title }}
                   body: ${{ inputs.pr-body }}
-                  commit-message: 'Sync changes from ${{ inputs.source-branch }} to ${{ inputs.target-branch }}'
+                  commit-message: 'Merge changes from ${{ inputs.source-branch }} to ${{ inputs.target-branch }}'
                   delete-branch: false
