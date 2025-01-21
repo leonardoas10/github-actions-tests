@@ -107,7 +107,7 @@ jobs:
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
                     IFS=',' read -ra REVIEWERS <<< "${{ github.event.inputs.pr-reviewers }}"
                     for reviewer in "${REVIEWERS[@]}"; do
-                      gh pr review "$pr_url" --add-reviewer "$reviewer"
+                      gh pr edit "$pr_url" --add-reviewer "$reviewer"
                     done
                   fi
 
@@ -127,6 +127,6 @@ jobs:
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
                     IFS=',' read -ra REVIEWERS <<< "${{ github.event.inputs.pr-reviewers }}"
                     for reviewer in "${REVIEWERS[@]}"; do
-                      gh pr review "${{ steps.check_pr.outputs.pr_url }}" --add-reviewer "$reviewer"
+                      gh pr edit "${{ steps.check_pr.outputs.pr_url }}" --add-reviewer "$reviewer"
                     done
                   fi
