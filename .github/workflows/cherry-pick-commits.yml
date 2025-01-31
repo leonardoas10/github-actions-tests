@@ -1,13 +1,8 @@
 name: Cherry-Pick Commits
-# Comment 1
-# Comment 2
+
 on:
     workflow_dispatch:
         inputs:
-            target-branch:
-                description: 'Target branch to sync to'
-                required: true
-                default: 'dev'
             commit-shas:
                 description: 'Comma-separated list of commit SHAs to cherry-pick'
                 required: true
@@ -59,10 +54,8 @@ jobs:
                   git config --global user.email "github-actions@github.com"
 
             - name: Create Temporary Branch
-              env:
-                  TARGET_BRANCH: ${{ github.event.inputs.target-branch }}
               run: |
-                  git checkout -b cherry-pick-${GITHUB_RUN_ID} origin/${TARGET_BRANCH}
+                  git checkout -b cherry-pick-${GITHUB_RUN_ID} origin/${{ github.ref_name }}
 
             - name: Cherry-Pick Commits
               env:
@@ -74,8 +67,6 @@ jobs:
                   done
 
             - name: Push Changes
-              env:
-                  TARGET_BRANCH: ${{ github.event.inputs.target-branch }}
               run: |
                   git push origin cherry-pick-${GITHUB_RUN_ID}
 
@@ -86,7 +77,7 @@ jobs:
                   pr_url=$(gh pr create \
                     --title "${{ github.event.inputs.pr-title }}" \
                     --body "${{ github.event.inputs.pr-body }}" \
-                    --base "${{ github.event.inputs.target-branch }}" \
+                    --base "${{ github.ref_name }}" \
                     --head "cherry-pick-${GITHUB_RUN_ID}" \
                     --repo ${{ github.repository }} \
                     --assignee "${{ github.actor }}" \
