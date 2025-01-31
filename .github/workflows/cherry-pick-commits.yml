@@ -81,7 +81,7 @@ jobs:
                     --head "cherry-pick-${GITHUB_RUN_ID}" \
                     --repo ${{ github.repository }} \
                     --assignee "${{ github.actor }}" \
-                    --label "cherry-pick")
+                    --label "github-actions")
 
                   # Assign reviewers if any
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
