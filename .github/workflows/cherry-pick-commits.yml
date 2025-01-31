@@ -1,0 +1,100 @@
+name: Cherry-Pick Commits
+
+on:
+    workflow_dispatch:
+        inputs:
+            target-branch:
+                description: 'Target branch to sync to'
+                required: true
+                default: 'dev'
+            commit-shas:
+                description: 'Comma-separated list of commit SHAs to cherry-pick'
+                required: true
+            pr-title:
+                description: 'Custom PR title'
+                required: false
+                default: 'Cherry-pick selected commits from main to dev'
+            pr-body:
+                description: 'Custom PR description'
+                required: false
+                default: 'Automated PR to cherry-pick selected commits'
+            pr-reviewers:
+                description: 'Comma-separated list of GitHub usernames of the reviewers (optional)'
+                required: false
+
+permissions:
+    pull-requests: write
+    contents: write
+    repository-projects: write
+
+jobs:
+    validate-trigger:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Check if Triggered from dev
+              run: |
+                  if [[ "${{ github.ref_name }}" != "dev" ]]; then
+                      echo "❌ This workflow can only be triggered from the 'dev' branch."
+                      exit 1
+                  fi
+            - name: Validate Commits
+              run: |
+                  if [[ -z "${{ github.event.inputs.commit-shas }}" ]]; then
+                      echo "Error: At least one commit SHA is required." && exit 1
+                  fi
+
+    cherry-pick-and-create-pr:
+        needs: validate-trigger
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Configure Git
+              run: |
+                  git config --global user.name "github-actions"
+                  git config --global user.email "github-actions@github.com"
+
+            - name: Create Temporary Branch
+              env:
+                  TARGET_BRANCH: ${{ github.event.inputs.target-branch }}
+              run: |
+                  git checkout -b cherry-pick-${GITHUB_RUN_ID} origin/${TARGET_BRANCH}
+
+            - name: Cherry-Pick Commits
+              env:
+                  COMMIT_SHAS: ${{ github.event.inputs.commit-shas }}
+              run: |
+                  IFS=',' read -ra COMMITS <<< "$COMMIT_SHAS"
+                  for commit in "${COMMITS[@]}"; do
+                    git cherry-pick "$commit" || (echo "Failed to cherry-pick $commit" && exit 1)
+                  done
+
+            - name: Push Changes
+              env:
+                  TARGET_BRANCH: ${{ github.event.inputs.target-branch }}
+              run: |
+                  git push origin cherry-pick-${GITHUB_RUN_ID}
+
+            - name: Create Pull Request
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  pr_url=$(gh pr create \
+                    --title "${{ github.event.inputs.pr-title }}" \
+                    --body "${{ github.event.inputs.pr-body }}" \
+                    --base "${{ github.event.inputs.target-branch }}" \
+                    --head "cherry-pick-${GITHUB_RUN_ID}" \
+                    --repo ${{ github.repository }} \
+                    --assignee "${{ github.actor }}" \
+                    --label "cherry-pick")
+
+                  # Assign reviewers if any
+                  if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
+                    IFS=',' read -ra REVIEWERS <<< "${{ github.event.inputs.pr-reviewers }}"
+                    for reviewer in "${REVIEWERS[@]}"; do
+                      gh pr edit "$pr_url" --add-reviewer "$reviewer"
+                    done
+                  fi
