@@ -123,3 +123,13 @@ jobs:
                       gh pr edit "${{ steps.check_pr.outputs.pr_url }}" --add-reviewer "$reviewer"
                     done
                   fi
+    trigger-auto-labeler:
+        needs: create-or-update-pr
+        runs-on: ubuntu-latest
+        steps:
+            - name: Trigger Auto Labeler workflow
+              run: |
+                  curl -X POST \
+                    -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+                    -d '{"ref": "main"}' \
+                    https://api.github.com/repos/${{ github.repository }}/actions/workflows/auto-labeler.yml/dispatches
