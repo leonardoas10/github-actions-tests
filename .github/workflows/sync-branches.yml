@@ -44,6 +44,8 @@ jobs:
     create-or-update-pr:
         needs: validate-trigger
         runs-on: ubuntu-latest
+        outputs:
+            pr_number: ${{ steps.set_pr_number.outputs.pr_number }}
         steps:
             - name: Checkout Code
               uses: actions/checkout@v3
@@ -66,7 +68,7 @@ jobs:
 
                     echo "pr_exists=true" >> $GITHUB_OUTPUT
                     echo "pr_url=$pr_url" >> $GITHUB_OUTPUT
-                    echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
+                    echo "pr_number_check_step=$pr_number" >> $GITHUB_OUTPUT
                   fi
 
             - name: Ensure 'github-actions' Label Exists
@@ -84,6 +86,7 @@ jobs:
                   fi
 
             - name: Create Pull Request
+              id: create_pr
               if: steps.check_pr.outputs.pr_exists == 'false'
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -99,7 +102,7 @@ jobs:
                     --label "github-actions")
 
                   pr_number=$(echo "$pr_url" | sed 's/.*\/\(.*\)/\1/')
-                  echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
+                  echo "pr_number_create_step=$pr_number" >> $GITHUB_OUTPUT
 
                   # Assign reviewers if any
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
@@ -127,6 +130,17 @@ jobs:
                     for reviewer in "${REVIEWERS[@]}"; do
                       gh pr edit "${{ steps.check_pr.outputs.pr_url }}" --add-reviewer "$reviewer"
                     done
+                  fi
+            - name: Set PR Number
+              id: set_pr_number
+              run: |
+                  if [[ -n "${{ steps.create_pr.outputs.pr_number_create_step }}" ]]; then
+                    echo "pr_number=${{ steps.create_pr.outputs.pr_number_create_step }}" >> $GITHUB_OUTPUT
+                  elif [[ -n "${{ steps.check_pr.outputs.pr_number_check_step }}" ]]; then
+                    echo "pr_number=${{ steps.check_pr.outputs.pr_number_check_step }}" >> $GITHUB_OUTPUT
+                  else
+                    echo "No PR number found. Exiting."
+                    exit 1
                   fi
 
     auto-labeler:
