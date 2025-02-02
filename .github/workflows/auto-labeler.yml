@@ -1,6 +1,12 @@
 name: 'Pull Request Labeler'
 on:
     pull_request:
+    workflow_call:
+        inputs:
+            pr-number:
+                description: 'Optional PR number'
+                required: false
+                type: string
 
 permissions:
     pull-requests: write
@@ -9,6 +15,8 @@ jobs:
     auto-labeler:
         runs-on: ubuntu-latest
         steps:
+            - uses: actions/checkout@v4
             - uses: actions/labeler@v4
               with:
                   repo-token: '${{ secrets.GITHUB_TOKEN }}'
+                  pr-number: ${{ inputs.pr-number }}
