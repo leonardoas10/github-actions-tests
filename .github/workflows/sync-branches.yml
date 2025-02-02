@@ -146,6 +146,6 @@ jobs:
 
     auto-labeler:
         needs: create-or-update-pr
-        uses: ./.github/workflows/auto-labeler.yml@main
+        uses: ./.github/workflows/auto-labeler.yml
         with:
             pr-number: ${{ needs.create-or-update-pr.outputs.pr_number }}
