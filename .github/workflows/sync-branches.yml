@@ -40,6 +40,7 @@ jobs:
                   fi
                   if [[ -z "${{ github.event.inputs.target-branch }}" ]]; then
                       echo "Error: Target branch is required." && exit 1
+                  fi
 
     create-or-update-pr:
         needs: validate-trigger
