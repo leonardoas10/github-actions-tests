@@ -146,9 +146,6 @@ jobs:
 
     auto-labeler:
         needs: create-or-update-pr
-        runs-on: ubuntu-latest
-        steps:
-            - name: Call Auto-Labeler Workflow
-              uses: ./.github/workflows/auto-labeler.yml
-              with:
-                  pr-number: ${{ needs.create-or-update-pr.outputs.pr_number }}
+        uses: ./.github/workflows/auto-labeler.yml@main
+        with:
+            pr-number: ${{ needs.create-or-update-pr.outputs.pr_number }}
