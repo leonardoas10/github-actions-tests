@@ -58,17 +58,22 @@ jobs:
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
-                  pr_url=$(gh pr list --base "${{ github.event.inputs.target-branch }}" --head "${{ github.ref_name }}" --state open --json url -q ".[0].url")
+                  pr_url=$(gh pr list \
+                  --base "${{ github.event.inputs.target-branch }}" \
+                  --head "${{ github.event.inputs.source-branch }}" \
+                  --state open \
+                  --label "github-actions" \
+                  --json url -q ".[0].url")
                   echo "PR URL: $pr_url"
+
                   if [[ -z "$pr_url" ]]; then
                     echo "No existing PR found. Will create a new one."
                     echo "pr_exists=false" >> $GITHUB_OUTPUT
                   else
                     echo "Existing PR found: $pr_url"
-                    pr_number=$(echo "$pr_url" | sed 's/.*\/\(.*\)/\1/')
-
                     echo "pr_exists=true" >> $GITHUB_OUTPUT
                     echo "pr_url=$pr_url" >> $GITHUB_OUTPUT
+                    pr_number=$(echo "$pr_url" | sed 's/.*\/\(.*\)/\1/')
                     echo "pr_number_check_step=$pr_number" >> $GITHUB_OUTPUT
                   fi
 
