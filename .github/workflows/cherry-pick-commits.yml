@@ -42,6 +42,8 @@ jobs:
     cherry-pick-and-create-pr:
         needs: validate-trigger
         runs-on: ubuntu-latest
+        outputs:
+            pr_number: ${{ steps.create_pr.outputs.pr_number }}
         steps:
             - name: Checkout Code
               uses: actions/checkout@v3
@@ -71,6 +73,7 @@ jobs:
                   git push origin cherry-pick-${GITHUB_RUN_ID}
 
             - name: Create Pull Request
+              id: create_pr
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               run: |
@@ -83,6 +86,9 @@ jobs:
                     --assignee "${{ github.actor }}" \
                     --label "github-actions")
 
+                  pr_number=$(echo "$pr_url" | sed 's/.*\/\(.*\)/\1/')
+                  echo "pr_number=$pr_number" >> $GITHUB_OUTPUT
+
                   # Assign reviewers if any
                   if [[ -n "${{ github.event.inputs.pr-reviewers }}" ]]; then
                     IFS=',' read -ra REVIEWERS <<< "${{ github.event.inputs.pr-reviewers }}"
@@ -90,3 +96,9 @@ jobs:
                       gh pr edit "$pr_url" --add-reviewer "$reviewer"
                     done
                   fi
+
+    auto-labeler:
+        needs: cherry-pick-and-create-pr
+        uses: ./.github/workflows/auto-labeler.yml
+        with:
+            pr-number: ${{ needs.cherry-pick-and-create-pr.outputs.pr_number }}
