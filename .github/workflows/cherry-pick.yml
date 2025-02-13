@@ -93,7 +93,11 @@ jobs:
 
                   if [[ -n "$existing_pr" ]]; then
                     echo "Updating existing PR #$existing_pr"
-                    gh pr edit "$existing_pr" --add-label "github-actions"
+                    gh pr edit "$existing_pr" \
+                    --title "${{ github.event.inputs.pr-title }}" \
+                    --body "${{ github.event.inputs.pr-body }}" \
+                    --add-assignee "${{ github.actor }}" \
+                    --add-label "github-actions"
                     echo "pr_number=$existing_pr" >> $GITHUB_OUTPUT
                   else
                     echo "Creating new PR"
