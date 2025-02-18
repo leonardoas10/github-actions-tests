@@ -1,0 +1,58 @@
+name: Create/Update Release Branch
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - '**/versions.js'
+
+jobs:
+    create-release-branch:
+        runs-on: ubuntu-latest
+
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v3
+              with:
+                  node-version: '16'
+
+            - name: Get version from versions.js
+              id: get-version
+              run: |
+                  # Read and evaluate versions.js to get the version numbers
+                  VERSION_MAJOR=$(node -p "require('./workspaces/react-native-apps/versions.js').APP_VERSION_MAJOR")
+                  VERSION_MINOR=$(node -p "require('./workspaces/react-native-apps/versions.js').APP_VERSION_MINOR")
+                  VERSION_PATCH=$(node -p "require('./workspaces/react-native-apps/versions.js').APP_VERSION_PATCH")
+
+                  # Construct version string
+                  VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}"
+                  echo "version=$VERSION" >> $GITHUB_OUTPUT
+                  echo "Version detected: $VERSION"
+
+            - name: Configure Git
+              run: |
+                  git config user.name "GitHub Actions"
+                  git config user.email "actions@github.com"
+
+            - name: Create or update release branch
+              run: |
+                  VERSION=${{ steps.get-version.outputs.version }}
+                  RELEASE_BRANCH="release/$VERSION"
+
+                  # Check if branch exists
+                  if git ls-remote --heads origin refs/heads/$RELEASE_BRANCH | grep -q refs/heads/$RELEASE_BRANCH; then
+                    echo "Release branch $RELEASE_BRANCH exists. Updating..."
+                    git checkout $RELEASE_BRANCH
+                    git pull origin $RELEASE_BRANCH
+                    git merge --no-ff origin/main -m "Merge main into $RELEASE_BRANCH"
+                    git push origin $RELEASE_BRANCH
+                  else
+                    echo "Creating new release branch $RELEASE_BRANCH"
+                    git checkout -b $RELEASE_BRANCH
+                    git push -u origin $RELEASE_BRANCH
+                  fi
