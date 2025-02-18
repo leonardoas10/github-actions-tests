@@ -4,8 +4,6 @@ on:
     push:
         branches:
             - main
-        paths:
-            - '**/versions.js'
 
 jobs:
     create-release-branch:
