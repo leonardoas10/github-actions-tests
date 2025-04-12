@@ -1,33 +1,42 @@
 name: Mark PR as Deployed to Dev
 
 on:
-    push:
+    pull_request:
+        types:
+            - closed
         branches:
             - main
 
+permissions:
+    contents: read
+    deployments: write # Needed to use createDeployment API
+
 jobs:
     mark-deployment:
-        name: Mark as Deployed
+        if: github.event.pull_request.merged == true # ✅ Only run on merged PRs
         runs-on: ubuntu-latest
-        environment: dev # must match GitHub Environment name
+        environment:
+            name: dev
 
         steps:
-            - name: Create fake deployment
+            - name: Mark deployment in Jira
               uses: actions/github-script@v7
               with:
                   script: |
                       const { owner, repo } = context.repo;
+                      const pr = context.payload.pull_request;
+                      const ref = pr.merge_commit_sha;
 
                       const deployment = await github.rest.repos.createDeployment({
                         owner,
                         repo,
-                        ref: context.sha,
+                        ref: ref,
                         required_contexts: [],
                         environment: 'dev',
                         auto_merge: false,
                         transient_environment: false,
                         production_environment: false,
-                        description: 'PR merged to main - marked as dev deployment',
+                        description: `PR #${pr.number} merged to main - marked as dev deployment`,
                       });
 
                       await github.rest.repos.createDeploymentStatus({
@@ -35,6 +44,6 @@ jobs:
                         repo,
                         deployment_id: deployment.data.id,
                         state: 'success',
-                        environment_url: '', // optional, can add a preview URL
+                        environment_url: '', // Optional: link to staging or preview site
                         description: 'Marked as deployed to dev',
                       });
