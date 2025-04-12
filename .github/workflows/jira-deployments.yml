@@ -1,4 +1,4 @@
-name: Mark PR as Deployed to Dev
+name: Mark PR as Deployed
 
 on:
     pull_request:
@@ -6,19 +6,36 @@ on:
             - closed
         branches:
             - main
+            - qa
+            - staging
+            - prod
 
 permissions:
     contents: read
-    deployments: write # Needed to use createDeployment API
+    deployments: write
 
 jobs:
     mark-deployment:
-        if: github.event.pull_request.merged == true # ✅ Only run on merged PRs
+        if: github.event.pull_request.merged == true # Only run on merged PRs
         runs-on: ubuntu-latest
-        environment:
-            name: dev
 
         steps:
+            - name: Set environment dynamically based on the target branch
+              id: set-env
+              run: |
+                  # Dynamically set the environment based on the target branch
+                  if [[ "${{ github.event.pull_request.base.ref }}" == "main" ]]; then
+                    echo "environment=dev" >> $GITHUB_ENV
+                  elif [[ "${{ github.event.pull_request.base.ref }}" == "qa" ]]; then
+                    echo "environment=qa" >> $GITHUB_ENV
+                  elif [[ "${{ github.event.pull_request.base.ref }}" == "staging" ]]; then
+                    echo "environment=staging" >> $GITHUB_ENV
+                  elif [[ "${{ github.event.pull_request.base.ref }}" == "prod" ]]; then
+                    echo "environment=prod" >> $GITHUB_ENV
+                  else
+                    echo "environment=none" >> $GITHUB_ENV
+                  fi
+
             - name: Mark deployment in Jira
               uses: actions/github-script@v7
               with:
@@ -26,17 +43,23 @@ jobs:
                       const { owner, repo } = context.repo;
                       const pr = context.payload.pull_request;
                       const ref = pr.merge_commit_sha;
+                      const environment = process.env.environment;  // Access environment set in previous step
+
+                      if (environment === 'none') {
+                        console.log('No matching environment for this PR.');
+                        return;
+                      }
 
                       const deployment = await github.rest.repos.createDeployment({
                         owner,
                         repo,
                         ref: ref,
                         required_contexts: [],
-                        environment: 'dev',
+                        environment: environment,
                         auto_merge: false,
                         transient_environment: false,
                         production_environment: false,
-                        description: `PR #${pr.number} merged to main - marked as dev deployment`,
+                        description: `PR #${pr.number} merged to ${environment} - marked as ${environment} deployment`,
                       });
 
                       await github.rest.repos.createDeploymentStatus({
@@ -45,5 +68,5 @@ jobs:
                         deployment_id: deployment.data.id,
                         state: 'success',
                         environment_url: '', // Optional: link to staging or preview site
-                        description: 'Marked as deployed to dev',
+                        description: `Marked as deployed to ${environment}`,
                       });
