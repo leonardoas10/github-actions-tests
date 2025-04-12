@@ -15,27 +15,34 @@ permissions:
     deployments: write
 
 jobs:
-    mark-deployment:
-        if: github.event.pull_request.merged == true # Only run on merged PRs
+    determine-environment:
         runs-on: ubuntu-latest
-
+        outputs:
+            environment: ${{ steps.set-env.outputs.environment }}
         steps:
             - name: Set environment dynamically based on the target branch
               id: set-env
               run: |
-                  # Dynamically set the environment based on the target branch
                   if [[ "${{ github.event.pull_request.base.ref }}" == "main" ]]; then
-                    echo "environment=dev" >> $GITHUB_ENV
+                    echo "environment=dev" >> $GITHUB_OUTPUT
                   elif [[ "${{ github.event.pull_request.base.ref }}" == "qa" ]]; then
-                    echo "environment=qa" >> $GITHUB_ENV
+                    echo "environment=qa" >> $GITHUB_OUTPUT
                   elif [[ "${{ github.event.pull_request.base.ref }}" == "staging" ]]; then
-                    echo "environment=staging" >> $GITHUB_ENV
+                    echo "environment=staging" >> $GITHUB_OUTPUT
                   elif [[ "${{ github.event.pull_request.base.ref }}" == "prod" ]]; then
-                    echo "environment=prod" >> $GITHUB_ENV
+                    echo "environment=prod" >> $GITHUB_OUTPUT
                   else
-                    echo "environment=none" >> $GITHUB_ENV
+                    echo "Needs environment for continue"
+                    exit 1
                   fi
 
+    mark-deployment:
+        if: github.event.pull_request.merged == true # Only run on merged PRs
+        runs-on: ubuntu-latest
+        needs: determine-environment # This job depends on the environment determination job
+        environment: ${{ needs.determine-environment.outputs.environment }} # Dynamically set environment
+
+        steps:
             - name: Mark deployment in Jira
               uses: actions/github-script@v7
               with:
@@ -43,7 +50,7 @@ jobs:
                       const { owner, repo } = context.repo;
                       const pr = context.payload.pull_request;
                       const ref = pr.merge_commit_sha;
-                      const environment = process.env.environment;  // Access environment set in previous step
+                      const environment = process.env.environment;  // Access environment set by previous step
 
                       if (environment === 'none') {
                         console.log('No matching environment for this PR.');
