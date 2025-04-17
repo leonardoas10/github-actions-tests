@@ -43,6 +43,9 @@ jobs:
         environment: ${{ needs.determine-environment.outputs.environment }} # Dynamically set environment
 
         steps:
+            - name: Echo environment
+              run: |
+                  echo "Current environment is: ${{ needs.determine-environment.outputs.environment }}"
             - name: Mark deployment in Jira
               uses: actions/github-script@v7
               with:
