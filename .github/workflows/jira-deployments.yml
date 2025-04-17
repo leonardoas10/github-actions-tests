@@ -60,10 +60,10 @@ jobs:
                     JIRA_KEYS=$(echo "$TITLE" | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
                   else
                     echo "Extracting Jira keys from commits in the PR..."
-                    # Extract Jira keys from commits in the PR
-                    COMMITS=$(gh pr view ${{ github.event.pull_request.number }} --json commits -q '.commits[].message')
-                    echo "Found Jira keys: $COMMITS"
-                    JIRA_KEYS=$(echo "$COMMITS" | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
+                    git fetch origin main qa --depth=0
+
+                    BASE_SHA=$(git merge-base origin/qa origin/main)
+                    JIRA_KEYS=$(git log --pretty=format:"%s" "$BASE_SHA"..origin/main | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
                   fi
 
                   echo "Found Jira keys: $JIRA_KEYS"
