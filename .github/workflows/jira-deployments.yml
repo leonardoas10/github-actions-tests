@@ -42,6 +42,9 @@ jobs:
         outputs:
             jira_keys: ${{ steps.extract-keys.outputs.jira_keys }}
         steps:
+            - name: Checkout the repo
+              uses: actions/checkout@v4
+
             - name: Extract Jira keys from PR title or commits
               id: extract-keys
               env:
@@ -52,9 +55,11 @@ jobs:
                   TITLE="${{ github.event.pull_request.title }}"
 
                   if [[ "$TARGET_BRANCH" == "main" ]]; then
+                  echo "Extract Jira keys from PR title"
                     # Extract Jira keys from PR title
                     JIRA_KEYS=$(echo "$TITLE" | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
                   else
+                    echo "Extracting Jira keys from commits in the PR..."
                     # Extract Jira keys from commits in the PR
                     COMMITS=$(gh pr view ${{ github.event.pull_request.number }} --json commits -q '.commits[].message')
                     JIRA_KEYS=$(echo "$COMMITS" | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
