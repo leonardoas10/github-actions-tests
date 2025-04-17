@@ -36,16 +36,47 @@ jobs:
                     exit 1
                   fi
 
-    mark-deployment:
-        if: github.event.pull_request.merged == true # Only run on merged PRs
+    extract-jira-keys:
         runs-on: ubuntu-latest
-        needs: determine-environment # This job depends on the environment determination job
-        environment: ${{ needs.determine-environment.outputs.environment }} # Dynamically set environment
+        needs: determine-environment
+        outputs:
+            jira_keys: ${{ steps.extract-keys.outputs.jira_keys }}
+        steps:
+            - name: Extract Jira keys from PR title or commits
+              id: extract-keys
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  echo "Extracting Jira issue keys..."
+                  TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+                  TITLE="${{ github.event.pull_request.title }}"
+
+                  if [[ "$TARGET_BRANCH" == "main" ]]; then
+                    # Extract Jira keys from PR title
+                    JIRA_KEYS=$(echo "$TITLE" | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
+                  else
+                    # Extract Jira keys from commits in the PR
+                    COMMITS=$(gh pr view ${{ github.event.pull_request.number }} --json commits -q '.commits[].message')
+                    JIRA_KEYS=$(echo "$COMMITS" | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
+                  fi
+
+                  echo "Found Jira keys: $JIRA_KEYS"
+                  echo "jira_keys=$JIRA_KEYS" >> $GITHUB_OUTPUT
+
+    mark-deployment:
+        if: github.event.pull_request.merged == true
+        runs-on: ubuntu-latest
+        needs:
+            - determine-environment
+            - extract-jira-keys
+        environment: ${{ needs.determine-environment.outputs.environment }}
 
         steps:
-            - name: Echo environment
+            - name: Echo environment and Jira keys
               run: |
                   echo "Current environment is: ${{ needs.determine-environment.outputs.environment }}"
+                  echo "Jira keys: ${{ needs.extract-jira-keys.outputs.jira_keys }}"
+
             - name: Mark deployment in Jira
               uses: actions/github-script@v7
               with:
@@ -53,12 +84,17 @@ jobs:
                       const { owner, repo } = context.repo;
                       const pr = context.payload.pull_request;
                       const ref = pr.merge_commit_sha;
-                      const environment = process.env.environment;  // Access environment set by previous step
+                      const environment = "${{ needs.determine-environment.outputs.environment }}";
+                      const jiraKeys = "${{ needs.extract-jira-keys.outputs.jira_keys }}";
 
-                      if (environment === 'none') {
+                      if (!environment || environment === 'none') {
                         console.log('No matching environment for this PR.');
                         return;
                       }
+
+                      const description = jiraKeys
+                        ? `Jira issues: ${jiraKeys}`
+                        : `PR #${pr.number} merged to ${environment}`;
 
                       const deployment = await github.rest.repos.createDeployment({
                         owner,
@@ -69,7 +105,7 @@ jobs:
                         auto_merge: false,
                         transient_environment: false,
                         production_environment: false,
-                        description: `PR #${pr.number} merged to ${environment} - marked as ${environment} deployment`,
+                        description: description,
                       });
 
                       await github.rest.repos.createDeploymentStatus({
@@ -77,6 +113,6 @@ jobs:
                         repo,
                         deployment_id: deployment.data.id,
                         state: 'success',
-                        environment_url: '', // Optional: link to staging or preview site
+                        environment_url: '', // Optional: add preview/staging link
                         description: `Marked as deployed to ${environment}`,
                       });
