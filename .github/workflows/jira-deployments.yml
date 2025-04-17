@@ -44,6 +44,8 @@ jobs:
         steps:
             - name: Checkout the repo
               uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
 
             - name: Extract Jira keys from PR title or commits
               id: extract-keys
