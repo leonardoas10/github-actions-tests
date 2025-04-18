@@ -54,7 +54,7 @@ jobs:
               run: |
                   echo "Extracting Jira issue keys..."
                   TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
-                  SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+                  SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
                   TITLE="${{ github.event.pull_request.title }}"
 
                   if [[ "$TARGET_BRANCH" == "main" ]]; then
