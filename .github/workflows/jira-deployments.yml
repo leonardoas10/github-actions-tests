@@ -55,17 +55,30 @@ jobs:
                   echo "Extracting Jira issue keys..."
                   TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
                   TITLE="${{ github.event.pull_request.title }}"
+                  MERGE_COMMIT_SHA="${{ github.event.pull_request.merge_commit_sha }}"
+                  HEAD_SHA="${{ github.event.pull_request.head.sha }}"
 
                   if [[ "$TARGET_BRANCH" == "main" ]]; then
-                  echo "Extract Jira keys from PR title"
+                    echo "Target is main, extracting Jira keys from PR title"
                     # Extract Jira keys from PR title
                     JIRA_KEYS=$(echo "$TITLE" | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
                   else
-                    echo "Extracting Jira keys from commits in the PR..."
-                    git fetch origin main qa
+                    echo "Target is $TARGET_BRANCH, extracting Jira keys from PR commits..."
 
-                    BASE_SHA=$(git merge-base origin/qa origin/main)
-                    JIRA_KEYS=$(git log --pretty=format:"%s" "$BASE_SHA"..origin/main | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
+                    # Handle squash or merge commit (merged PR with single commit)
+                    if [[ -n "$MERGE_COMMIT_SHA" ]]; then
+                      echo "Detected squash or merge commit"
+                      BASE=$(git merge-base origin/$TARGET_BRANCH $MERGE_COMMIT_SHA)
+                      RANGE="$BASE..$MERGE_COMMIT_SHA"
+                    else
+                      # Handle rebase merge
+                      echo "Detected rebase merge"
+                      BASE=$(git merge-base origin/$TARGET_BRANCH $HEAD_SHA)
+                      RANGE="$BASE..$HEAD_SHA"
+                    fi
+
+                    # Extract Jira issue keys from the commit messages in the range
+                    JIRA_KEYS=$(git log --pretty=format:"%s" "$RANGE" | grep -oE 'LAS-[0-9]+' | sort -u | paste -sd "," -)
                   fi
 
                   echo "Found Jira keys: $JIRA_KEYS"
